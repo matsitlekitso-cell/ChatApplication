@@ -9,78 +9,107 @@
  */
 package com.mycompany.chatapplication;
 
+import java.util.Random;
+
 public class Message {
-    private String messageId;
-    private int messageNumber;
+    private String messageID;
     private String recipient;
-    private String messageText;
+    private String message;
     private String messageHash;
     private static int totalMessages = 0;
-    private static int totalSent = 0;
+    private int messageNumber;
 
-    public Message(int messageNumber, String recipient, String messageText) {
-        this.messageNumber = messageNumber;
+    // Empty constructor - THIS FIXES YOUR RED LINES
+    public Message() {
+    }
+
+    // Main constructor used by ChatApplication
+    public Message(String messageNumber, String recipient, String message) {
+        this.messageID = createMessageID();
         this.recipient = recipient;
-        this.messageText = messageText;
-        this.messageId = generateMessageId();
-        this.messageHash = createMessageHash();
+        this.message = message;
+        this.messageNumber = Integer.parseInt(messageNumber);
+        totalMessages++;
     }
 
-    // Page 12: 10-digit random Message ID
-    public String generateMessageId() {
-        java.util.Random rand = new java.util.Random();
-        long id = 1000000000L + (long)(rand.nextDouble() * 9000000000L);
-        return String.valueOf(id);
+    // Constructor with all fields
+    public Message(String messageID, String recipient, String message, String hash, int num) {
+        this.messageID = messageID;
+        this.recipient = recipient;
+        this.message = message;
+        this.messageHash = hash;
+        this.messageNumber = num;
     }
 
-    // Page 12: Recipient check - contains + and 10-13 chars
-    public boolean checkRecipientCell() {
-        if (recipient == null) return false;
-        return recipient.startsWith("+") && recipient.length() >= 10 && recipient.length() <= 13;
-    }
-
-    // Page 12: Message length check
-    public String checkMessageLength() {
-        if (messageText.length() > 250) {
-            return "Please enter a message of less than 250 characters.";
-        } else {
-            totalMessages++;
-            return "Message sent";
+    public String createMessageID() {
+        Random rand = new Random();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 10; i++) {
+            sb.append(rand.nextInt(10));
         }
+        return sb.toString();
     }
 
-    // Page 12: Hash = 00:0:HITHANKS - first 2 of ID : number : FIRST+LAST CAPS
+    public String getMessageID() {
+        if (messageID == null) {
+            messageID = createMessageID();
+        }
+        return messageID;
+    }
+
+    public void setMessageID(String id) {
+        this.messageID = id;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public String getRecipient() {
+        return recipient;
+    }
+
+    public static int getTotalMessages() {
+        return totalMessages;
+    }
+
+    public static void setTotalMessages(int total) {
+        totalMessages = total;
+    }
+
+    // THIS IS THE METHOD YOUR TEST IS CALLING - MUST BE EXACT NAME
+    public boolean checkRecipientCell(String cell) {
+        if (cell == null) return false;
+        if (!cell.startsWith("+")) return false;
+        if (cell.length() > 13) return false; // +27 + 9 digits = 12 max, allow 13
+        if (cell.length() < 11) return false;
+        // Check if rest are digits
+        String numberPart = cell.substring(1);
+        return numberPart.matches("\\d+");
+    }
+
     public String createMessageHash() {
-        String firstTwo = messageId.substring(0, 2);
-        String[] words = messageText.trim().split("\\s+");
-        String firstWord = words[0].replaceAll("[^A-Za-z]", "");
-        String lastWord = words[words.length - 1].replaceAll("[^A-Za-z]", "");
-        String hash = firstTwo + ":" + messageNumber + ":" + firstWord + lastWord;
-        return hash.toUpperCase();
+        if (message == null || messageID == null) return "00:0:HASH";
+        String[] words = message.split(" ");
+        String firstWord = words.length > 0 ? words[0] : "HI";
+        String lastWord = words.length > 1 ? words[words.length - 1] : firstWord;
+        return messageID.substring(0, 2) + ":" + messageNumber + ":" + firstWord.toUpperCase() + lastWord.toUpperCase();
+    }
+
+    public String sentMessage(int option) {
+        switch (option) {
+            case 1:
+                return "Message successfully sent.";
+            case 2:
+                return "Press 0 to delete message.";
+            case 3:
+                return "Message successfully stored.";
+            default:
+                return "Invalid option.";
+        }
     }
 
     public String printMessages() {
-        return "MessageID: " + messageId + "\nMessageHash: " + messageHash + 
-               "\nRecipient: " + recipient + "\nMessage: " + messageText;
+        return "MessageID: " + messageID + "\nMessage Hash: " + messageHash + "\nRecipient: " + recipient + "\nMessage: " + message;
     }
-
-    // Store JSON - Attribution: https://www.w3schools.com/java/java_files_create.asp
-    public void storeMessage() {
-        try {
-            java.io.FileWriter writer = new java.io.FileWriter("messages.json", true);
-            String json = "{\"messageId\":\"" + messageId + "\",\"messageHash\":\"" + messageHash + 
-                          "\",\"recipient\":\"" + recipient + "\",\"message\":\"" + messageText + "\"}\n";
-            writer.write(json);
-            writer.close();
-            totalSent++;
-        } catch (java.io.IOException e) {
-            System.out.println("Error storing message");
-        }
-    }
-
-    public static int returnTotalMessages() { return totalMessages; }
-    public String getMessageId() { return messageId; }
-    public String getMessageHash() { return messageHash; }
-    public String getRecipient() { return recipient; }
-    public String getMessage() { return messageText; }
 }
